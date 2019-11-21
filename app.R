@@ -23,37 +23,40 @@ ui <- fluidPage(
                        step = 100), 
            numericInput(inputId = "num_cust", 
                        label = "Number of customers", 
-                       value = 10000, 
+                       value = 10000000, 
                        min = 1, 
                        max = 100000000000, 
                        step = 1000), 
            numericInput(inputId = "cagr", 
                         label = "Industry growth rate (CAGR) in %", 
-                        value = 5, 
+                        value = 10, 
                         min = 0, 
                         max = 1000, 
                         step = 1),
            sliderInput(inputId = "SAM_perc", 
                        label = "Estimate what percent of the TAM is servicable", 
-                       value = 10, 
+                       value = 25, 
                        min = 0, 
                        max = 100), 
            sliderInput(inputId = "SOM_perc", 
                        label = "Estimate what percent of the SAM is obtainable", 
                        value = 10, 
                        min = 0, 
-                       max = 100)), 
+                       max = 100)),
     column(8, 
            tags$h3("Estimated ARR in 5 years"),
-           plotOutput("circ"))), 
+           plotOutput("plot"))), 
   fluidRow(
-    column(12),
-    tags$p("Want to request a feature? Open an issue on ",
-           tags$a(href = "https://github.com/katiesaund/market_size_app", "Github.")))
+    column(4),
+    column(6,
+           tags$p("Want to request a feature? Open an issue on ",
+           tags$a(href = "https://github.com/katiesaund/market_size_app", "Github."))), 
+    column(2, 
+           downloadButton("savePlot", "Download plot")))
 )
 
 server <- function(input, output) {
-  output$circ <- renderPlot({
+  market_df <- function(){
     unit_arr_millions <- input$unit_arr / 1000000
     TAM_size <- 
       unit_arr_millions * 
@@ -73,13 +76,11 @@ server <- function(input, output) {
     
     market_size$Market <- factor(market_size$Market, levels = c("TAM", "SAM", "SOM"))
     
-    
-    
     market_size <- market_size %>% 
       mutate("mod_ARR" = ARR) %>% 
       mutate("Best_Denomination" = "M")
     
-    for (i in 1:3){
+    for (i in 1:3) {
       if (market_size$ARR[i] > 999) {
         market_size$Best_Denomination[i] <- "B"
         market_size$mod_ARR[i] <- market_size$mod_ARR[i]  / 1000
@@ -88,10 +89,11 @@ server <- function(input, output) {
         market_size$mod_ARR[i] <- market_size$mod_ARR[i] * 1000
       }
     }
-    
-    print(market_size)
-    
-    market_size %>%   
+    market_size
+  }
+  
+  plotInput <- reactive({
+    market_df() %>%   
       ggplot() + 
       geom_circle(aes(x0 = 0, 
                       y0 = radius, 
@@ -105,6 +107,17 @@ server <- function(input, output) {
                     y = label_position, 
                     label = paste0(round(mod_ARR, 1), Best_Denomination)))
   })
+  
+  output$plot <- renderPlot({
+    print(plotInput())
+  })
+  
+  output$savePlot <- downloadHandler(
+    filename = "market_size.png",
+    content = function(file) {
+      ggsave(file, plotInput(), device = "png")
+    }
+  )
 }
 
 shinyApp(ui = ui, server = server)

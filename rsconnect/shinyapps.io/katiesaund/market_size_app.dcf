@@ -5,8 +5,8 @@ account: katiesaund
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1497769
-bundleId: 2605603
+bundleId: 2605821
 url: https://katiesaund.shinyapps.io/market_size_app/
-when: 1574296767.82964
+when: 1574303381.33576
 asMultiple: FALSE
 asStatic: FALSE
